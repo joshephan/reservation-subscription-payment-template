@@ -1,11 +1,4 @@
-import {
-  serial,
-  text,
-  integer,
-  decimal,
-  timestamp,
-  pgTable,
-} from 'drizzle-orm/pg-core';
+import { serial, text, integer, timestamp, pgTable } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { hotel } from './hotel';
 
@@ -17,10 +10,7 @@ export const hotelRoom = pgTable('hotel_room', {
   roomNumber: text('room_number').notNull(), // 방 번호
   roomType: text('room_type').notNull(), // 싱글 베드, 더블 베드...
   capacity: integer('capacity').notNull(), // 수용 인원
-  pricePerNight: decimal('price_per_night', {
-    precision: 10,
-    scale: 2,
-  }).notNull(), // 가격
+  pricePerNight: integer('price_per_night').notNull(), // 가격
   description: text('description'), // 방 설명
   amenities: text('amenities'), // 방 편의시설
   isAvailable: integer('is_available').default(1), // 방 상태

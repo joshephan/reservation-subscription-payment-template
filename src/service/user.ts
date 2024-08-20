@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { asc, desc, eq, sql } from 'drizzle-orm';
+import { asc, desc, eq } from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { user } from '../schema/user';
 import bcrypt from 'bcrypt';
@@ -54,7 +54,14 @@ export class UserService {
    * @param userData
    * @returns
    */
-  async updateUser(id: number, userData: Partial<typeof user.$inferInsert>) {
+  async updateUser(
+    id: number,
+    userData: Partial<typeof user.$inferInsert> & {
+      password: string;
+      phone: string;
+      profilePicture: string;
+    },
+  ) {
     const result = await this.db
       .update(user)
       .set(userData)
@@ -144,14 +151,12 @@ export class UserService {
       .offset(offset);
 
     const users = await query;
-    const totalCount = await this.db
-      .select({ count: sql`count(user.id)` })
-      .from(user);
+    const totalCount = await this.db.select().from(user);
 
     return {
       users,
       metadata: {
-        totalCount: Number(totalCount[0].count),
+        totalCount: Number(totalCount.length),
         page,
         size,
       },

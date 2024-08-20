@@ -12,27 +12,39 @@
 
 4. Module
 
-## DB Sync가 제공되는지
+### DB Sync가 제공되는지
 
 일반적으로 ORM에서는 제공함, 드리즐 사용 경험이 적으니 확인
 
-## REDIS 캐싱
+### REDIS 캐싱
 
 API 캐싱
 
-## 결제
+### 결제
 
 포트원 대시보드 콘솔 접근 + 개발용 키 발급 + API 연결
 
-## Supabase DB + S3 storage 버캣
+### Supabase DB + S3 storage 버캣
 
 정적 자원 CRUD 처리
 
-## Algolia를 사용해서 검색
+### Algolia를 사용해서 검색
 
 이 부분은 대시보드 콘솔 접근 후에 해당 function을 업로드
 
-## 사용자들의 로그
+### 사용자들의 로그
 
 NoSQL 독립적으로 저장, RDS와 참조가 필요 없어서
 AWS DynamoDB, Firebase firestore
+
+## 구독 서비스
+
+구독 테이블 (Subscription)
+
+취소하는 경우에 대해서 결제 가능한 날짜까지는 사용이 가능할 것
+
+### drizzle-orm의 nullable 처리가 굉장히 이상함
+
+.notNull() 표시가 없는 스키마의 컬럼에 대해서는
+insert, update가 불가능
+이유는 $inferInsert 타입에 없는 컬럼에 대해서는 처리가 불가능하다.

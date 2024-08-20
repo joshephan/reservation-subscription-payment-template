@@ -23,7 +23,7 @@ export const hotel = pgTable('hotel', {
   website: text('website'), // 호텔 웹사이트
   checkInTime: text('check_in_time'), // 호텔 체크인 시간
   checkOutTime: text('check_out_time'), // 호텔 체크아웃 시간
-  isActive: integer('is_active').default(1), // 호텔 활성 상태
+  isActive: integer('is_active').notNull(), // 호텔 활성 상태
   createdAt: timestamp('created_at').defaultNow(), // 호텔 생성 시간
-  updatedAt: timestamp('updated_at').defaultNow(), // 호텔 수정 시간
+  updatedAt: timestamp('updated_at').notNull(), // 호텔 수정 시간
 });

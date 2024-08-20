@@ -1,6 +1,7 @@
 import { serial, text, timestamp, integer, pgTable } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { hotel } from './hotel';
+import { admin } from './admin';
 
 // 호텔을 관리하는 매니저
 export const hotelManager = pgTable('hotel_manager', {
@@ -13,7 +14,10 @@ export const hotelManager = pgTable('hotel_manager', {
   profilePicture: text('profile_picture'),
   isActive: integer('is_active').default(1),
   createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at'),
+  deletedAt: timestamp('deleted_at').default(null), // 프로덕션 가시성 제한, 일정 기간 후 삭제
+  deleteReason: text('delete_reason').default(null),
+  deletedByAdminId: serial('deleted_by_admin_id').references(() => admin.id), // 관리자가 삭제한 경우
 });
 
 export const hotelManagerRelations = relations(hotelManager, ({ one }) => ({

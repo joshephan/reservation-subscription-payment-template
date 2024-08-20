@@ -3,14 +3,13 @@ import { eq } from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { admin } from '../schema/admin';
 import bcrypt from 'bcrypt';
+import { CreateAdminDto } from 'src/dto/admin';
 
 @Injectable()
 export class AdminService {
   constructor(private db: PostgresJsDatabase) {}
 
-  async createAdmin(
-    adminData: Partial<typeof admin.$inferInsert> & { password: string },
-  ) {
+  async createAdmin(adminData: CreateAdminDto) {
     const saltRounds = 10;
     const salt = process.env.ENCRYPT_ADMIN_SALT_STRING;
 

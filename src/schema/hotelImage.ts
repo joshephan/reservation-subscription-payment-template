@@ -9,7 +9,7 @@ export const hotelImage = pgTable('hotel_image', {
     .references(() => hotel.id),
   imageUrl: text('image_url').notNull(),
   caption: text('caption'),
-  isPrimary: integer('is_primary').default(0), // 값이 0에 가까울 수록 먼저 표기
+  isPrimary: integer('is_primary').notNull(), // 값이 0에 가까울 수록 먼저 표기
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

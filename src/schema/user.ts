@@ -12,7 +12,7 @@ export const user = pgTable('user', {
   createdAt: timestamp('created_at'),
   updatedAt: timestamp('updated_at'),
   deletedAt: timestamp('deleted_at').default(null), // 프로덕션 가시성 제한, 일정 기간 후 삭제
-  deleteReason: text('delete_reason'),
+  deleteReason: text('delete_reason').default(null),
   deletedByAdminId: serial('deleted_by_admin_id').references(() => admin.id), // 관리자가 삭제한 경우
 });
 

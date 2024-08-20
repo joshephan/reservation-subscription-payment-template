@@ -31,7 +31,7 @@ export const hotelReview = pgTable('hotel_review', {
   stayDate: timestamp('stay_date').notNull(), // 머문 기간
   isVerified: integer('is_verified').default(0), // 0: not verified, 1: verified
   createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at'),
   deletedAt: timestamp('deleted_at').default(null), // 프로덕션 가시성 제한, 일정 기간 후 삭제
   deleteReason: text('delete_reason'),
   deletedByAdminId: serial('deleted_by_admin_id').references(() => admin.id),
