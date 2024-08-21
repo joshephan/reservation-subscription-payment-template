@@ -8,6 +8,7 @@ export const user = pgTable('user', {
   email: text('email').unique(),
   password: text('password'), // 암호화된 비밀번호(hashed)
   phone: text('phone').unique(), // 전화번호, 숫자만 포함, 구분자(-) replace 필요, 국가번호는 제외
+  billingKey: text('billing_key'),
   profilePicture: text('profile_picture'),
   createdAt: timestamp('created_at'),
   updatedAt: timestamp('updated_at'),

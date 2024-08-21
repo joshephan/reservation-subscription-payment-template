@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { eq } from 'drizzle-orm';
 import { hotelManager } from 'src/schema/hotelManager';
+import { hotel } from 'src/schema/hotel';
 
 @Injectable()
 export class HotelManagerService {
@@ -38,8 +39,13 @@ export class HotelManagerService {
       .returning();
   }
 
-  async getAllHotelManagers() {
-    return this.db.select().from(hotelManager);
+  async getAllHotelManagers(page: number, limit: number) {
+    return this.db
+      .select()
+      .from(hotelManager)
+      .leftJoin(hotel, eq(hotelManager.hotelId, hotel.id))
+      .limit(limit)
+      .offset((page - 1) * limit);
   }
 
   async softDeleteHotelManager(

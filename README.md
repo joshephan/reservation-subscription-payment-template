@@ -48,3 +48,12 @@ AWS DynamoDB, Firebase firestore
 .notNull() 표시가 없는 스키마의 컬럼에 대해서는
 insert, update가 불가능
 이유는 $inferInsert 타입에 없는 컬럼에 대해서는 처리가 불가능하다.
+
+- 포트원 결제 웹훅 처리
+- auth guard 파일 정리
+- module 파일 정리
+- S3 storage 버캣에 정적 파일 저장
+- Algolia 검색 연동
+- REDIS 캐싱
+- 메시징(알리고 서비스)
+- 사용자 로그 저장

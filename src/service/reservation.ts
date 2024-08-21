@@ -2,12 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { eq, and, gte, lte, or, ne } from 'drizzle-orm';
 import { reservation } from 'src/schema/reservation';
+import { paymentHistory } from 'src/schema/paymentHistory';
+import { PayMethod } from '@portone/browser-sdk/dist/v2/entity';
 
 @Injectable()
 export class ReservationService {
   constructor(private db: PostgresJsDatabase) {}
 
-  async createReservation(reservationData: typeof reservation.$inferInsert) {
+  async createReservation(
+    transactionId: string,
+    paymentId: string,
+    paymentMethod: PayMethod,
+    reservationData: typeof reservation.$inferInsert,
+  ) {
     // Validate reservation data
     if (
       !reservationData.userId ||
@@ -68,15 +75,36 @@ export class ReservationService {
       throw new Error('The room is not available for the selected dates');
     }
 
-    return this.db.insert(reservation).values(reservationData).returning();
+    const [newReservation] = await this.db
+      .insert(reservation)
+      .values(reservationData)
+      .returning();
+
+    await this.db
+      .insert(paymentHistory)
+      .values({
+        userId: reservationData.userId,
+        reservationId: newReservation.id,
+        amount: reservationData.totalPrice,
+        paymentType: 'reservation',
+        status: 'completed',
+        transactionId: transactionId,
+        paymentId: paymentId,
+        paymentMethod: paymentMethod,
+      } as typeof paymentHistory.$inferInsert)
+      .returning();
+
+    return newReservation;
   }
 
   async getReservationById(id: number) {
-    return this.db
+    const [result] = await this.db
       .select()
       .from(reservation)
       .where(eq(reservation.id, id))
       .limit(1);
+
+    return result;
   }
 
   async updateReservation(
@@ -125,7 +153,7 @@ export class ReservationService {
     // Check for overlapping reservations if dates are being updated
     if (reservationData.checkInDate || reservationData.checkOutDate) {
       const currentReservation = await this.getReservationById(id);
-      if (!currentReservation.length) {
+      if (!currentReservation) {
         throw new Error('Reservation not found');
       }
 
@@ -134,31 +162,29 @@ export class ReservationService {
         .from(reservation)
         .where(
           and(
-            eq(reservation.hotelRoomId, currentReservation[0].hotelRoomId),
+            eq(reservation.hotelRoomId, currentReservation.hotelRoomId),
             ne(reservation.id, id),
             or(
               and(
                 gte(
                   reservation.checkInDate,
-                  reservationData.checkInDate ||
-                    currentReservation[0].checkInDate,
+                  reservationData.checkInDate || currentReservation.checkInDate,
                 ),
                 lte(
                   reservation.checkInDate,
                   reservationData.checkOutDate ||
-                    currentReservation[0].checkOutDate,
+                    currentReservation.checkOutDate,
                 ),
               ),
               and(
                 gte(
                   reservation.checkOutDate,
-                  reservationData.checkInDate ||
-                    currentReservation[0].checkInDate,
+                  reservationData.checkInDate || currentReservation.checkInDate,
                 ),
                 lte(
                   reservation.checkOutDate,
                   reservationData.checkOutDate ||
-                    currentReservation[0].checkOutDate,
+                    currentReservation.checkOutDate,
                 ),
               ),
             ),

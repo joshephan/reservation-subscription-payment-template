@@ -14,7 +14,7 @@ export const hotelReviewReply = pgTable('hotel_review_reply', {
   content: text('content').notNull(),
   isPublished: integer('is_published').default(1), // 0: draft, 1: published
   createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at'),
 });
 
 export const hotelReviewReplyRelations = relations(

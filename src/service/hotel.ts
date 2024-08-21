@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, like } from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { hotel } from '../schema/hotel';
 import { hotelImage } from 'src/schema/hotelImage';
@@ -81,8 +81,21 @@ export class HotelService {
     return result[0];
   }
 
-  async getAllHotels() {
-    return this.db.select().from(hotel);
+  async getAllHotels(page: number, limit: number) {
+    return this.db
+      .select()
+      .from(hotel)
+      .limit(limit)
+      .offset((page - 1) * limit);
+  }
+
+  async searchHotels(query: string, page: number, limit: number) {
+    return this.db
+      .select()
+      .from(hotel)
+      .where(like(hotel.name, `%${query}%`))
+      .limit(limit)
+      .offset((page - 1) * limit);
   }
 
   async getHotelsByCity(city: string) {
@@ -97,6 +110,24 @@ export class HotelService {
     const result = await this.db
       .update(hotel)
       .set({ isActive, updatedAt: new Date() })
+      .where(eq(hotel.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async softDeleteHotel(
+    id: number,
+    deleteReason: string,
+    deletedByAdminId: number,
+  ) {
+    const result = await this.db
+      .update(hotel)
+      .set({
+        deletedAt: new Date(),
+        deleteReason,
+        deletedByAdminId,
+        updatedAt: new Date(),
+      } as Partial<typeof hotel.$inferInsert>)
       .where(eq(hotel.id, id))
       .returning();
     return result[0];

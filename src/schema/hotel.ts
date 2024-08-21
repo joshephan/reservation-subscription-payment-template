@@ -6,6 +6,8 @@ import {
   timestamp,
   pgTable,
 } from 'drizzle-orm/pg-core';
+import { admin } from './admin';
+import { relations } from 'drizzle-orm';
 
 export const hotel = pgTable('hotel', {
   id: serial('id').primaryKey(),
@@ -26,4 +28,14 @@ export const hotel = pgTable('hotel', {
   isActive: integer('is_active').notNull(), // 호텔 활성 상태
   createdAt: timestamp('created_at').defaultNow(), // 호텔 생성 시간
   updatedAt: timestamp('updated_at').notNull(), // 호텔 수정 시간
+  deletedAt: timestamp('deleted_at').default(null), // 프로덕션 가시성 제한, 일정 기간 후 삭제
+  deleteReason: text('delete_reason').default(null),
+  deletedByAdminId: serial('deleted_by_admin_id').references(() => admin.id), // 관리자가 삭제한 경우
 });
+
+export const hotelRelations = relations(hotel, ({ one }) => ({
+  admin: one(admin, {
+    fields: [hotel.deletedByAdminId],
+    references: [admin.id],
+  }),
+}));

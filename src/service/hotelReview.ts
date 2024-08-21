@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { eq, and, desc } from 'drizzle-orm';
 import { hotelReview } from 'src/schema/hotelReview';
+import { reviewImage } from 'src/schema/reviewImage';
+import { hotelReviewReply } from 'src/schema/hotelReviewReply';
+import { user } from 'src/schema/user';
 
 @Injectable()
 export class HotelReviewService {
@@ -12,6 +15,7 @@ export class HotelReviewService {
       isVerified: number;
       rating: number;
     },
+    reviewImages?: (typeof reviewImage.$inferInsert)[],
   ) {
     // Validate review data
     if (
@@ -46,17 +50,39 @@ export class HotelReviewService {
 
     // Extend reviewData type to include isVerified
     reviewData.isVerified = reviewData.isVerified || 0; // Ensure isVerified is set
-    return this.db.insert(hotelReview).values(reviewData).returning();
+    const [insertedReview] = await this.db
+      .insert(hotelReview)
+      .values(reviewData)
+      .returning();
+
+    if (reviewImages && reviewImages.length > 0) {
+      await this.db.insert(reviewImage).values(
+        reviewImages.map((image) => ({
+          ...image,
+          hotelReviewId: insertedReview.id,
+        })),
+      );
+    }
+
+    return insertedReview;
   }
 
   async getHotelReviewById(id: number) {
-    return this.db
+    const [result] = await this.db
       .select()
       .from(hotelReview)
       .where(eq(hotelReview.id, id))
       .limit(1);
+
+    return result;
   }
 
+  /**
+   * 리뷰 수정: 실제 서비스에서 리뷰 수정을 제공하지 않으므로
+   * @param id 리뷰 아이디
+   * @param reviewData 리뷰 데이터
+   * @returns 수정된 리뷰
+   */
   async updateHotelReview(
     id: number,
     reviewData: Partial<typeof hotelReview.$inferInsert> & {
@@ -115,30 +141,53 @@ export class HotelReviewService {
   }
 
   async deleteHotelReview(id: number) {
-    return this.db
+    // Delete the hotel review
+    const deletedReview = await this.db
       .delete(hotelReview)
       .where(eq(hotelReview.id, id))
       .returning();
+
+    // Delete associated review images
+    await this.db.delete(reviewImage).where(eq(reviewImage.hotelReviewId, id));
+
+    // Delete associated review replies
+    await this.db
+      .delete(hotelReviewReply)
+      .where(eq(hotelReviewReply.hotelReviewId, id));
+
+    return deletedReview;
   }
 
-  async getHotelReviewsByHotelId(hotelId: number) {
+  async getHotelReviewsByHotelId(hotelId: number, page: number, limit: number) {
     return this.db
       .select()
       .from(hotelReview)
+      .leftJoin(
+        hotelReviewReply,
+        eq(hotelReviewReply.hotelReviewId, hotelReview.id),
+      )
+      .leftJoin(reviewImage, eq(reviewImage.hotelReviewId, hotelReview.id))
+      .leftJoin(user, eq(user.id, hotelReview.userId))
       .where(
         and(eq(hotelReview.hotelId, hotelId), eq(hotelReview.deletedAt, null)),
       )
+      .limit(limit)
+      .offset((page - 1) * limit)
       .orderBy(desc(hotelReview.createdAt));
   }
 
-  async getHotelReviewsByUserId(userId: number) {
+  async getHotelReviewsByUserId(userId: number, page: number, limit: number) {
     return this.db
       .select()
       .from(hotelReview)
+      .leftJoin(reviewImage, eq(reviewImage.hotelReviewId, hotelReview.id))
+      .leftJoin(user, eq(user.id, hotelReview.userId))
       .where(
         and(eq(hotelReview.userId, userId), eq(hotelReview.deletedAt, null)),
       )
-      .orderBy(desc(hotelReview.createdAt));
+      .orderBy(desc(hotelReview.createdAt))
+      .limit(limit)
+      .offset((page - 1) * limit);
   }
 
   async verifyHotelReview(id: number) {

@@ -37,7 +37,12 @@ export class UserService {
    * @returns 유저 정보
    */
   async getUserById(id: number) {
-    return await this.db.select().from(user).where(eq(user.id, id)).limit(1);
+    const [result] = await this.db
+      .select()
+      .from(user)
+      .where(eq(user.id, id))
+      .limit(1);
+    return result;
   }
 
   async getUserByEmail(email: string) {
@@ -57,9 +62,10 @@ export class UserService {
   async updateUser(
     id: number,
     userData: Partial<typeof user.$inferInsert> & {
-      password: string;
-      phone: string;
-      profilePicture: string;
+      password?: string;
+      phone?: string;
+      profilePicture?: string;
+      billingKey?: string;
     },
   ) {
     const result = await this.db
