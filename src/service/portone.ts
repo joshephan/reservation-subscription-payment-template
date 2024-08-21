@@ -17,7 +17,7 @@ import {
 export class PortOneService {
   private readonly storeId = process.env.PORTONE_STORE_ID;
   private readonly apiSecret = process.env.PORTONE_API_SECRET;
-  private readonly portoneUrl = 'https://api.portone.io';
+  private readonly portoneUrl = process.env.PORTONE_URL;
   constructor(private readonly db: PostgresJsDatabase) {}
 
   /**
