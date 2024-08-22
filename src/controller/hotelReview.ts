@@ -11,15 +11,16 @@ import {
   Query,
 } from '@nestjs/common';
 import { HotelReviewService } from '../service/hotelReview';
-import { JwtAuthGuard } from 'src/auth/guard';
 import { hotelReview } from 'src/schema/hotelReview';
 import { reviewImage } from 'src/schema/reviewImage';
+import { UserAuthGuard } from 'src/auth/user.guard';
+import { Public } from 'src/auth/public.decorator';
 
 @Controller('hotel-reviews')
 export class HotelReviewController {
   constructor(private readonly hotelReviewService: HotelReviewService) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Post()
   async createHotelReview(
     @Request() req,
@@ -29,7 +30,7 @@ export class HotelReviewController {
         isVerified: number;
         rating: number;
       };
-      reviewImages: (typeof reviewImage.$inferInsert)[];
+      reviewImages: typeof reviewImage.$inferInsert & { file: File }[];
     },
   ) {
     payload.reviewData.userId = req.user.id;
@@ -39,12 +40,13 @@ export class HotelReviewController {
     );
   }
 
+  @Public()
   @Get(':id')
   async getHotelReviewById(@Param('id') id: number) {
     return this.hotelReviewService.getHotelReviewById(id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Put(':id')
   async updateHotelReview(
     @Request() req,
@@ -64,7 +66,7 @@ export class HotelReviewController {
     return this.hotelReviewService.updateHotelReview(id, updateData);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Delete(':id')
   async deleteHotelReview(@Request() req, @Param('id') id: number) {
     const existingReview = await this.hotelReviewService.getHotelReviewById(id);
@@ -83,6 +85,7 @@ export class HotelReviewController {
    * @example
    * GET /hotel-reviews/hotel/1?page=1&limit=10
    */
+  @Public()
   @Get('hotel/:hotelId')
   async getHotelReviewsByHotelId(
     @Param('hotelId') hotelId: number,
@@ -106,7 +109,7 @@ export class HotelReviewController {
    * @example
    * GET /hotel-reviews/user/1?page=1&limit=10
    */
-  @UseGuards(JwtAuthGuard)
+  @Public()
   @Get('user/:userId')
   async getHotelReviewsByUserId(
     @Request() req,

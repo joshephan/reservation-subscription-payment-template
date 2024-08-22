@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { jwtConstants } from 'src/auth/constants';
-import { UserController } from 'src/controller/user';
-import { UserService } from 'src/service/user';
+import { AdminController } from 'src/controller/admin';
+import { AdminService } from 'src/service/admin';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({
@@ -11,7 +11,7 @@ import { JwtModule } from '@nestjs/jwt';
       signOptions: { expiresIn: '60s' },
     }),
   ],
-  controllers: [UserController],
-  providers: [UserService],
+  controllers: [AdminController],
+  providers: [AdminService],
 })
-export class UserModule {}
+export class AdminModule {}

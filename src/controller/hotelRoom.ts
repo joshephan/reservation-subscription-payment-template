@@ -10,22 +10,23 @@ import {
   Request,
 } from '@nestjs/common';
 import { HotelRoomService } from '../service/hotelRoom';
-import { JwtAuthGuard } from 'src/auth/guard';
 import { hotelRoom } from 'src/schema/hotelRoom';
 import { roomImage } from 'src/schema/roomImage';
+import { Public } from 'src/auth/public.decorator';
+import { HotelManagerAuthGuard } from 'src/auth/hotelManager.guard';
 
 @Controller('hotel-rooms')
 export class HotelRoomController {
   constructor(private readonly hotelRoomService: HotelRoomService) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HotelManagerAuthGuard)
   @Post()
   async createHotelRoom(
     @Request() req,
     @Body()
     roomData: {
       room: typeof hotelRoom.$inferInsert;
-      images?: (typeof roomImage.$inferInsert)[];
+      images?: (typeof roomImage.$inferInsert & { file: File })[];
     },
   ) {
     if (!req.user.isAdmin) {
@@ -37,12 +38,13 @@ export class HotelRoomController {
     );
   }
 
+  @Public()
   @Get(':id')
   async getHotelRoomById(@Param('id') id: number) {
     return this.hotelRoomService.getHotelRoomById(id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HotelManagerAuthGuard)
   @Put(':id')
   async updateHotelRoom(
     @Request() req,
@@ -55,7 +57,7 @@ export class HotelRoomController {
     return this.hotelRoomService.updateHotelRoom(id, updateData);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HotelManagerAuthGuard)
   @Delete(':id')
   async deleteHotelRoom(@Request() req, @Param('id') id: number) {
     if (!req.user.isAdmin) {
@@ -64,6 +66,7 @@ export class HotelRoomController {
     return this.hotelRoomService.deleteHotelRoom(id);
   }
 
+  @Public()
   @Get('hotel/:hotelId')
   async getHotelRoomsByHotelId(@Param('hotelId') hotelId: number) {
     return this.hotelRoomService.getHotelRoomsByHotelId(hotelId);
@@ -74,6 +77,7 @@ export class HotelRoomController {
    * @param searchParams
    * @returns
    */
+  @Public()
   @Get('available')
   async getAvailableRooms(
     @Body()

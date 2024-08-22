@@ -10,8 +10,9 @@ import {
   Request,
 } from '@nestjs/common';
 import { HotelReviewReplyService } from '../service/hotelReviewReply';
-import { JwtAuthGuard } from 'src/auth/guard';
 import { hotelReviewReply } from 'src/schema/hotelReviewReply';
+import { HotelManagerAuthGuard } from 'src/auth/hotelManager.guard';
+import { Public } from 'src/auth/public.decorator';
 
 @Controller('hotel-review-replies')
 export class HotelReviewReplyController {
@@ -19,7 +20,7 @@ export class HotelReviewReplyController {
     private readonly hotelReviewReplyService: HotelReviewReplyService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HotelManagerAuthGuard)
   @Post()
   async createHotelReviewReply(
     @Request() req,
@@ -32,12 +33,13 @@ export class HotelReviewReplyController {
     return this.hotelReviewReplyService.createHotelReviewReply(replyData);
   }
 
+  @Public()
   @Get(':id')
   async getHotelReviewReplyById(@Param('id') id: number) {
     return this.hotelReviewReplyService.getHotelReviewReplyById(id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HotelManagerAuthGuard)
   @Put(':id')
   async updateHotelReviewReply(
     @Request() req,
@@ -52,7 +54,7 @@ export class HotelReviewReplyController {
     return this.hotelReviewReplyService.updateHotelReviewReply(id, updateData);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HotelManagerAuthGuard)
   @Delete(':id')
   async deleteHotelReviewReply(@Request() req, @Param('id') id: number) {
     const reply =
@@ -63,6 +65,7 @@ export class HotelReviewReplyController {
     return this.hotelReviewReplyService.deleteHotelReviewReply(id);
   }
 
+  @Public()
   @Get('review/:reviewId')
   async getHotelReviewRepliesByReviewId(@Param('reviewId') reviewId: number) {
     return this.hotelReviewReplyService.getHotelReviewRepliesByReviewId(

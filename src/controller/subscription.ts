@@ -10,11 +10,11 @@ import {
   Delete,
 } from '@nestjs/common';
 import { SubscriptionService } from '../service/subscription';
-import { JwtAuthGuard } from 'src/auth/guard';
 import { subscription } from 'src/schema/subscription';
 import { paymentHistory } from 'src/schema/paymentHistory';
 import { PortOneService } from 'src/service/portone';
 import { PayMethod } from '@portone/browser-sdk/dist/v2/entity';
+import { UserAuthGuard } from 'src/auth/user.guard';
 
 @Controller('subscriptions')
 export class SubscriptionController {
@@ -23,7 +23,7 @@ export class SubscriptionController {
     private readonly portOneService: PortOneService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Post()
   async createSubscription(
     @Request() req,
@@ -60,7 +60,7 @@ export class SubscriptionController {
     return result;
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Get(':userId')
   async getSubscriptionByUserId(
     @Request() req,
@@ -72,7 +72,7 @@ export class SubscriptionController {
     return this.subscriptionService.getSubscriptionByUserId(userId);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Put(':id')
   async updateSubscription(
     @Request() req,
@@ -92,7 +92,7 @@ export class SubscriptionController {
     });
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Delete(':id')
   async cancelSubscription(@Request() req, @Param('id') id: number) {
     const subscription = await this.subscriptionService.getSubscriptionByUserId(
@@ -105,7 +105,7 @@ export class SubscriptionController {
     return this.subscriptionService.cancelSubscription(id, adminId);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Post(':id/renew')
   async renewSubscription(
     @Request() req,

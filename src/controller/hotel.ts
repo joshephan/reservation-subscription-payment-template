@@ -10,45 +10,64 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/auth/guard';
+import { AdminAuthGuard } from 'src/auth/admin.guard';
+import { Public } from 'src/auth/public.decorator';
 import { hotel } from 'src/schema/hotel';
+import { hotelImage } from 'src/schema/hotelImage';
 import { HotelService } from 'src/service/hotel';
 
 @Controller('hotels')
 export class HotelController {
   constructor(private readonly hotelService: HotelService) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminAuthGuard)
   @Post()
   async createHotel(
     @Request() req,
     @Body() hotelData: typeof hotel.$inferInsert,
+    @Body()
+    hotelImages?: Omit<typeof hotelImage.$inferInsert, 'id' | 'createdAt'> &
+      {
+        hotelId: number;
+        imageUrl: string;
+        isPrimary: number;
+        file: File;
+      }[],
   ) {
     if (!req.user.isAdmin) {
       throw new Error('Only administrators can create hotels');
     }
-    return this.hotelService.createHotel(hotelData);
+    return this.hotelService.createHotel(hotelData, hotelImages);
   }
 
+  @Public()
   @Get(':id')
   async getHotelById(@Param('id') id: number) {
     return this.hotelService.getHotelById(id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminAuthGuard)
   @Put(':id')
   async updateHotel(
     @Request() req,
     @Param('id') id: number,
     @Body() updateData: Partial<typeof hotel.$inferInsert>,
+    @Body()
+    hotelImages?: Omit<typeof hotelImage.$inferInsert, 'id' | 'createdAt'> &
+      {
+        hotelId: number;
+        imageUrl: string;
+        isPrimary: number;
+        file: File;
+      }[],
   ) {
     if (!req.user.isAdmin) {
       throw new Error('Only administrators can update hotels');
     }
-    return this.hotelService.updateHotel(id, updateData);
+    return this.hotelService.updateHotel(id, updateData, hotelImages);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminAuthGuard)
   @Delete(':id')
   async deleteHotel(@Request() req, @Param('id') id: number) {
     if (!req.user.isAdmin) {
@@ -57,6 +76,7 @@ export class HotelController {
     return this.hotelService.deleteHotel(id);
   }
 
+  @Public()
   @Get()
   async getAllHotels(
     @Query('page') page: number = 1,
@@ -65,6 +85,7 @@ export class HotelController {
     return this.hotelService.getAllHotels(page, limit);
   }
 
+  @Public()
   @Get('search')
   async searchHotels(
     @Query('query') query: string,
@@ -74,7 +95,7 @@ export class HotelController {
     return this.hotelService.searchHotels(query, page, limit);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminAuthGuard)
   @Put(':id/soft-delete')
   async softDeleteHotel(
     @Request() req,

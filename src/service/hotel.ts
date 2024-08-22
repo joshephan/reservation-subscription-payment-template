@@ -3,6 +3,7 @@ import { eq, like } from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { hotel } from '../schema/hotel';
 import { hotelImage } from 'src/schema/hotelImage';
+import { SupabaseS3Service } from './s3';
 
 @Injectable()
 export class HotelService {
@@ -15,16 +16,48 @@ export class HotelService {
    */
   async createHotel(
     hotelData: Omit<typeof hotel.$inferInsert, 'id' | 'createdAt'>,
-    hotelImages?: Omit<typeof hotelImage.$inferInsert, 'id' | 'createdAt'>[],
+    hotelImages?: Omit<typeof hotelImage.$inferInsert, 'id' | 'createdAt'> &
+      {
+        hotelId: number;
+        imageUrl: string;
+        isPrimary: number;
+        file: File;
+      }[],
   ) {
     const result = await this.db.insert(hotel).values(hotelData).returning();
 
     let hotelImageResult: (typeof hotelImage.$inferInsert)[] = [];
     if (hotelImages) {
+      // Initialize the SupabaseS3Service
+      const s3Service = new SupabaseS3Service('hotel-images');
+
+      // Upload images to Supabase S3
+      const uploadedImages = [];
+      try {
+        for (const image of hotelImages) {
+          const path = `hotel_${result[0].id}/${image.file.name}-${new Date().getTime()}.${image.file.type.split('/').pop()}`;
+          const uploadedUrl = await s3Service.uploadFile(image.file, path);
+          if (uploadedUrl) {
+            uploadedImages.push({
+              ...image,
+              imageUrl: uploadedUrl,
+            });
+          } else {
+            throw new Error('Failed to upload image');
+          }
+        }
+      } catch (error) {
+        // If there's an error, remove all uploaded images
+        for (const image of uploadedImages) {
+          await s3Service.deleteFile(image.imageUrl);
+        }
+        throw new Error(`Error uploading images: ${error.message}`);
+      }
+
       hotelImageResult = await this.db
         .insert(hotelImage)
         .values(
-          hotelImages.map((el, idx) => ({
+          uploadedImages.map((el, idx) => ({
             ...el,
             hotelId: result[0].id,
             isPrimary: idx,

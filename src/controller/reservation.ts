@@ -10,11 +10,12 @@ import {
   Request,
 } from '@nestjs/common';
 import { ReservationService } from '../service/reservation';
-import { JwtAuthGuard } from 'src/auth/guard';
 import { reservation } from 'src/schema/reservation';
 import { PortOneService } from 'src/service/portone';
 import { PayMethod } from '@portone/browser-sdk/dist/v2/entity';
 import { PaymentHistoryService } from 'src/service/paymentHistory';
+import { UserAuthGuard } from 'src/auth/user.guard';
+import { Public } from 'src/auth/public.decorator';
 
 @Controller('reservations')
 export class ReservationController {
@@ -24,7 +25,7 @@ export class ReservationController {
     private readonly portoneService: PortOneService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Post()
   async createReservation(
     @Request() req,
@@ -72,7 +73,7 @@ export class ReservationController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Get(':id')
   async getReservationById(@Request() req, @Param('id') id: number) {
     const reservation = await this.reservationService.getReservationById(id);
@@ -82,7 +83,7 @@ export class ReservationController {
     return reservation;
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Put(':id')
   async updateReservation(
     @Request() req,
@@ -97,7 +98,7 @@ export class ReservationController {
     return this.reservationService.updateReservation(id, updateData);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Delete(':id')
   async cancelReservation(@Request() req, @Param('id') id: number) {
     const existingReservation =
@@ -133,7 +134,7 @@ export class ReservationController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Get('user/:userId')
   async getReservationsByUserId(
     @Request() req,
@@ -145,7 +146,7 @@ export class ReservationController {
     return this.reservationService.getReservationsByUserId(userId);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Public()
   @Get('room/:hotelRoomId')
   async getReservationsByHotelRoomId(
     @Param('hotelRoomId') hotelRoomId: number,
@@ -153,7 +154,7 @@ export class ReservationController {
     return this.reservationService.getReservationsByHotelRoomId(hotelRoomId);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Public()
   @Get('availability/:hotelRoomId')
   async checkRoomAvailability(
     @Param('hotelRoomId') hotelRoomId: number,
@@ -166,7 +167,7 @@ export class ReservationController {
     );
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Put(':id/status')
   async updateReservationStatus(
     @Request() req,

@@ -5,6 +5,7 @@ import { hotelReview } from 'src/schema/hotelReview';
 import { reviewImage } from 'src/schema/reviewImage';
 import { hotelReviewReply } from 'src/schema/hotelReviewReply';
 import { user } from 'src/schema/user';
+import { SupabaseS3Service } from './s3';
 
 @Injectable()
 export class HotelReviewService {
@@ -15,7 +16,10 @@ export class HotelReviewService {
       isVerified: number;
       rating: number;
     },
-    reviewImages?: (typeof reviewImage.$inferInsert)[],
+    reviewImages?: typeof reviewImage.$inferInsert &
+      {
+        file: File;
+      }[],
   ) {
     // Validate review data
     if (
@@ -56,12 +60,25 @@ export class HotelReviewService {
       .returning();
 
     if (reviewImages && reviewImages.length > 0) {
-      await this.db.insert(reviewImage).values(
-        reviewImages.map((image) => ({
+      // Initialize the SupabaseS3Service
+      const s3Service = new SupabaseS3Service('review-images');
+
+      let reviewImagesWithUrls: typeof reviewImage.$inferInsert &
+        {
+          imageUrl: string;
+        }[];
+
+      // Upload each image to S3
+      for (const image of reviewImages) {
+        const path = `review_${insertedReview.id}/${image.file.name}-${new Date().getTime()}.${image.file.type.split('/').pop()}`;
+        const uploadedUrl = await s3Service.uploadFile(image.file, path);
+        reviewImagesWithUrls.push({
           ...image,
-          hotelReviewId: insertedReview.id,
-        })),
-      );
+          imageUrl: uploadedUrl,
+        });
+      }
+
+      await this.db.insert(reviewImage).values(reviewImagesWithUrls);
     }
 
     return insertedReview;
@@ -154,6 +171,10 @@ export class HotelReviewService {
     await this.db
       .delete(hotelReviewReply)
       .where(eq(hotelReviewReply.hotelReviewId, id));
+
+    // Delete associated review images from S3
+    const s3Service = new SupabaseS3Service('review-images');
+    await s3Service.deleteFile(`review_${id}`);
 
     return deletedReview;
   }

@@ -4,6 +4,7 @@ import { desc, eq, and, gte, lte, or, isNull } from 'drizzle-orm';
 import { hotelRoom } from 'src/schema/hotelRoom';
 import { roomImage } from 'src/schema/roomImage';
 import { reservation } from 'src/schema/reservation';
+import { SupabaseS3Service } from './s3';
 
 @Injectable()
 export class HotelRoomService {
@@ -11,7 +12,9 @@ export class HotelRoomService {
 
   async createHotelRoom(
     roomData: typeof hotelRoom.$inferInsert,
-    roomImages?: (typeof roomImage.$inferInsert)[],
+    roomImages?: (typeof roomImage.$inferInsert & {
+      file: File;
+    })[],
   ) {
     // Validate required fields
     if (
@@ -59,12 +62,23 @@ export class HotelRoomService {
       .returning();
 
     if (roomImages && roomImages.length > 0) {
-      await this.db.insert(roomImage).values(
-        roomImages.map((image) => ({
+      const s3Service = new SupabaseS3Service('room-images');
+      let roomImagesWithUrls: typeof roomImage.$inferInsert &
+        {
+          imageUrl: string;
+        }[];
+
+      // Upload each image to S3
+      for (const image of roomImages) {
+        const path = `room_${insertedRoom.id}/${image.file.name}-${new Date().getTime()}.${image.file.type.split('/').pop()}`;
+        const uploadedUrl = await s3Service.uploadFile(image.file, path);
+        roomImagesWithUrls.push({
           ...image,
-          hotelRoomId: insertedRoom.id,
-        })),
-      );
+          imageUrl: uploadedUrl,
+        });
+      }
+
+      await this.db.insert(roomImage).values(roomImagesWithUrls);
     }
 
     return insertedRoom;
@@ -82,7 +96,9 @@ export class HotelRoomService {
   async updateHotelRoom(
     id: number,
     roomData: Partial<typeof hotelRoom.$inferInsert>,
-    roomImages?: (typeof roomImage.$inferInsert)[],
+    roomImages?: (typeof roomImage.$inferInsert & {
+      file: File;
+    })[],
   ) {
     return await this.db.transaction(async (tx) => {
       const [updatedRoom] = await tx
@@ -94,6 +110,31 @@ export class HotelRoomService {
         .returning();
 
       if (roomImages && roomImages.length > 0) {
+        const s3Service = new SupabaseS3Service('room-images');
+        let roomImagesWithUrls: typeof roomImage.$inferInsert &
+          {
+            imageUrl: string;
+          }[];
+
+        // Upload each image to S3
+        for (const image of roomImages) {
+          const path = `room_${updatedRoom.id}/${image.file.name}-${new Date().getTime()}.${image.file.type.split('/').pop()}`;
+          const uploadedUrl = await s3Service.uploadFile(image.file, path);
+          roomImagesWithUrls.push({
+            ...image,
+            imageUrl: uploadedUrl,
+          });
+        }
+
+        // Delete old images from S3
+        const oldImages = await tx
+          .select()
+          .from(roomImage)
+          .where(eq(roomImage.hotelRoomId, id));
+        for (const oldImage of oldImages) {
+          await s3Service.deleteFile(oldImage.imageUrl);
+        }
+
         await tx.delete(roomImage).where(eq(roomImage.hotelRoomId, id));
         await tx.insert(roomImage).values(
           roomImages.map((image) => ({
@@ -109,6 +150,14 @@ export class HotelRoomService {
 
   async deleteHotelRoom(id: number) {
     return await this.db.transaction(async (tx) => {
+      const s3Service = new SupabaseS3Service('room-images');
+      const oldImages = await tx
+        .select()
+        .from(roomImage)
+        .where(eq(roomImage.hotelRoomId, id));
+      for (const oldImage of oldImages) {
+        await s3Service.deleteFile(oldImage.imageUrl);
+      }
       await tx.delete(roomImage).where(eq(roomImage.hotelRoomId, id));
       await tx.delete(hotelRoom).where(eq(hotelRoom.id, id)).returning();
     });

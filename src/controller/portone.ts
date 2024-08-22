@@ -8,10 +8,10 @@
 // 빌링키를 생성하는 컨트롤러
 
 import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/auth/guard';
 import { PortOneService } from '../service/portone';
 import { UserService } from '../service/user';
 import { IdentityVerificationVerifiedCustomer } from 'src/types';
+import { UserAuthGuard } from 'src/auth/user.guard';
 
 @Controller('portone')
 export class PortOneController {
@@ -20,7 +20,7 @@ export class PortOneController {
     private readonly userService: UserService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserAuthGuard)
   @Post('billing-key')
   async createBillingKey(
     @Request() req,
